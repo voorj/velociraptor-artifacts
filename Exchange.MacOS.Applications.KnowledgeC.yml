@@ -15,7 +15,7 @@ author: Wes Lambert - @therealwlambert|@weslambert@infosec.exchange
 
 parameters:
 - name: KCDBGlob
-  default: /Users/*/Library/Application Support/Knowledge/knowledgeC.db
+  default:  /private/var/db/CoreDuet/Knowledge/knowledgeC.db,/Library/Application Support/Knowledge/knowledgeC.db,/Users/*/Library/Application Support/Knowledge/knowledgeC.db
 
 precondition:
       SELECT OS From info() where OS = 'darwin'
@@ -43,7 +43,6 @@ sources:
         `START` AS Start,
         `END` AS End,
         `USAGE IN SECONDS` AS Usage,	
-        ZSTREAMNAME AS StreamName,
-        ZVALUESTRING AS StreamValue,	
-        ZOBJECT.ZVALUESTRING AS ActivityType
+        ZSTREAMNAME AS ActivityType,
+        ZVALUESTRING AS Application
       FROM foreach(row=KCDBList,query=KCDBAppActivities)
