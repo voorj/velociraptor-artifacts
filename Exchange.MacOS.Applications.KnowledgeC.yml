@@ -24,7 +24,7 @@ sources:
   - name: Application Activities
     query: |
       LET KCDBList = SELECT OSPath
-       FROM glob(globs=split(string=KCDBGlob, sep=","))
+      FROM glob(globs=split(string=KCDBGlob, sep=","))
 
       LET KCDBAppActivities = SELECT *
       FROM sqlite(file=OSPath, query='''
