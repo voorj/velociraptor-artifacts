@@ -1,0 +1,49 @@
+name: Exchange.MacOS.Applications.KnowledgeC
+description: |
+   On macOS, the KnowledgeC DB can provide various details around application activities and usage, as well as device power status.
+   
+   More information about this database can be found here: 
+   
+   https://www.mac4n6.com/blog/2018/8/5/knowledge-is-power-using-the-knowledgecdb-database-on-macos-and-ios-to-determine-precise-user-and-application-usage
+
+reference:
+  - https://www.mac4n6.com/blog/2018/8/5/knowledge-is-power-using-the-knowledgecdb-database-on-macos-and-ios-to-determine-precise-user-and-application-usage
+
+type: CLIENT
+
+author: Wes Lambert - @therealwlambert|@weslambert@infosec.exchange
+
+parameters:
+- name: KCDBGlob
+  default: /Users/*/Library/Application Support/Knowledge/knowledgeC.db
+
+precondition:
+      SELECT OS From info() where OS = 'darwin'
+
+sources:
+  - name: Application Activities
+    query: |
+      LET KCDBList = SELECT OSPath
+       FROM glob(globs=split(string=KCDBGlob, sep=","))
+
+      LET KCDBAppActivities = SELECT *
+      FROM sqlite(file=OSPath, query='''
+      SELECT
+      datetime(ZOBJECT.ZCREATIONDATE+978307200,'UNIXEPOCH') as "ENTRY CREATION", 
+      datetime(ZOBJECT.ZSTARTDATE+978307200,'UNIXEPOCH') as "START",
+      datetime(ZOBJECT.ZENDDATE+978307200,'UNIXEPOCH') as "END", 
+      (ZOBJECT.ZENDDATE-ZOBJECT.ZSTARTDATE) as "USAGE IN SECONDS",
+      ZOBJECT.ZSTREAMNAME, 
+      ZOBJECT.ZVALUESTRING
+      FROM ZOBJECT
+      ORDER BY "START"
+      ''')
+  
+      SELECT timestamp(string=`ENTRY CREATION`) AS Timestamp,	
+        `START` AS Start,
+        `END` AS End,
+        `USAGE IN SECONDS` AS Usage,	
+        ZSTREAMNAME AS StreamName,
+        ZVALUESTRING AS StreamValue,	
+        ZOBJECT.ZVALUESTRING AS ActivityType
+      FROM foreach(row=KCDBList,query=KCDBAppActivities)
