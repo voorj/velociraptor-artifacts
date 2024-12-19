@@ -1,0 +1,19 @@
+name: MacOS.System.kMDItemLastUsedDate
+
+description: |
+   This artifact uses mdfind to enumerate the kMDItemLastUsedDate metadata attribute to list the last 30 days of applications and files last used by users on the system. Many archive files do not have the kMDItemLastUsedDate attribute and will be omitted from the results.
+   
+   kMDItemLastUsedDate is the "date and time that the file was last used. This value is updated automatically by LaunchServices everytime a file is opened by double clicking, or by asking LaunchServices to open a file."
+
+
+reference:
+- https://developer.apple.com/documentation/coreservices/kmditemlastuseddate
+
+
+sources:
+  - precondition:
+      SELECT OS From info() where OS = 'darwin'
+
+    query: |
+        LET BashScript = '''mdfind 'kMDItemLastUsedDate >= $time.today(-30)' -onlyin / | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done | sort -r'''
+        SELECT * FROM execve(argv=["/bin/bash", "-c", BashScript])
