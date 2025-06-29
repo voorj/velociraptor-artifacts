@@ -15,10 +15,14 @@ sources:
       SELECT OS From info() where OS = 'darwin'
 
     query: |
-        //LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate = "*" -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
-        LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate >= $time.today(-30) -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
-
-         LET results <= SELECT * FROM execve(argv=["/bin/bash", "-c", ItemLastUsedCmd],sep="\n", length=9999999)
-         WHERE log(message=Stdout)
-         
-         SELECT * from results
+      //LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate = "*" -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
+      LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate >= $time.today(-30) -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
+      
+      LET results_raw <= SELECT * FROM execve(argv=["/bin/bash", "-c", ItemLastUsedCmd],sep="\n", length=9999999) WHERE log(message=Stdout)
+      
+      LET parsed_results <= SELECT
+          split(string=Stdout, sep="\t")[0] AS LastUsedDate,
+          split(string=Stdout, sep="\t")[1] AS FilePath
+      FROM results_raw
+      
+      SELECT * from parsed_results
