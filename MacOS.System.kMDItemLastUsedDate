@@ -15,5 +15,10 @@ sources:
       SELECT OS From info() where OS = 'darwin'
 
     query: |
-        LET BashScript = '''mdfind 'kMDItemLastUsedDate >= $time.today(-30)' -onlyin / | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done | sort -r'''
-        SELECT * FROM execve(argv=["/bin/bash", "-c", BashScript])
+        //LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate = "*" -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
+        LET ItemLastUsedCmd <= '''mdfind 'kMDItemLastUsedDate >= $time.today(-30) -onlyin /' | while read line; do LastUsed=$(mdls "$line" -name kMDItemLastUsedDate | cut -d'=' -f2 | cut -c 2-20); printf "%s\t%s\n" "$LastUsed" "$line"; done'''
+
+         LET results <= SELECT * FROM execve(argv=["/bin/bash", "-c", ItemLastUsedCmd],sep="\n", length=9999999)
+         WHERE log(message=Stdout)
+         
+         SELECT * from results
